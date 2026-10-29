@@ -1,0 +1,66 @@
+---
+layout: runbook
+title: '#4471 · what it holds: three problems, three tickets'
+owner: herby
+status: open
+reviewed: 2026-10-29
+signature: 'v1.eyJzdWIiOiIxMTgxIiwiYXVkIjoiY2hhbGxlbmdlOndoYXQtaXQtc2hvd3MiLCJpYXQiOjE3OTMyNTY4MTksImV4cCI6MTc5MzM0MzIxOX0.W7QFcVi2CuFMIiaY7FgUaFWdOqENKVA0XU3xfhRHmKM'
+---
+
+<script>
+  import ProblemTable from '#lib/kb/ProblemTable.svelte';
+  import Callout from '#lib/kb/Callout.svelte';
+  import RenderStamp from '#lib/kb/RenderStamp.svelte';
+</script>
+
+[#4471](/kb/incidents/4471) is marked known: one issue, one fix queued. Read report by report, it
+is three problems. Each one needs its own fix, and the queued parser fix closes only one of them.
+
+<Callout kind="warn">
+#4471 is not one bug. Ship the parser fix and two of these keep coming in. Track each problem on
+its own ticket below, and stop merging date reports into #4471.
+</Callout>
+
+## The split
+
+<ProblemTable ticket={4471} />
+
+Counted from the ticket system's export, once per report id: the export repeats some reports
+across overlapping pages.
+
+## The three problems
+
+**`parser`: the shared parser reads every date month first.** A tenant that writes the day first
+books 12 May and gets an invite for 5 December. Any channel: app, email, and the booking-v2 form,
+whose hint already says `DD/MM/YYYY`. This is the bug #4471 names, and the fix queued for it.
+
+**`hint`: booking-v3 prints `MM/DD/YYYY` under its date field.** Alder Physio, Copper Studio
+and Pale Harbour run booking-v3. Their people type what the hint tells them, month first, and the
+form reads it the tenant's way. Only reports through the form. The parser fix does not touch it;
+the hint, or the form's reading of it, has to change.
+
+**`shift`: the date moves by one day.** No month and day swap. A Tuesday invite lands on the
+Monday, one meeting reads Tuesday in Lisbon and Monday in Toronto, an invite arrives before the
+booking. That is a time zone, not a date format. The desk already read these as a one-day move
+(`desk-notes.json`) and then filed them under `parser` by tenant; here they get their own ticket.
+
+## Why one ticket hid three
+
+- **Merged on subject.** [Decision 0001](/kb/decisions/0001-dedupe-by-subject) merges reports
+  whose subject lines match. People write the same few subjects whatever went wrong, so subject
+  lines cannot keep these problems apart: the table above counts the ones they share.
+- **Tagged by browser.** Intake guesses the cause from the reporter's browser. The cause depends
+  on the tenant: where they are and which form they run (`locales.ts`). The notes under the
+  table count where the two disagree.
+- **Counted once.** "Merge early, count once" counted reports, not causes.
+
+## What the desk does now
+
+1. New date reports: place them with `problemOf` (`#lib/kb/problems`), by tenant, channel and
+   desk notes, not by subject or browser. A report it cannot place goes to a person, not into a
+   ticket.
+2. Read the body when the dates in it are not a month and day swap. That is how `shift` was found.
+3. Decision 0001 stays as accepted; a new record should replace it with "same cause, same
+   ticket".
+
+<RenderStamp {signature} />
